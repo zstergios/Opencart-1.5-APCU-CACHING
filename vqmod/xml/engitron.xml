@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+	<id>Engintron - NGINX - Varnish</id>
+	<version>1.0.0</version>
+	<vqmver>2.4.1</vqmver>
+	<author>Stergios Zgouletas</author>
+	<file path="catalog/controller/common/header.php">
+    <operation>
+      <search position="after"><![CDATA[function index() {]]></search>
+      <add><![CDATA[
+       
+	   //$this->response->addHeader('Caching-Opencart: Web-expert.gr VQMOD');
+		if($this->cart->hasProducts() || $this->customer->isLogged())
+		{
+			$this->response->addHeader('Cache-Control: private');
+			$this->response->addHeader('X-Logged-In: True');
+		}
+		else
+		{
+			$this->response->addHeader('Cache-Control: public');
+			$this->response->addHeader('X-Logged-In: False');
+		}
+		
+        ]]></add>
+    </operation>
+	</file>
+</modification>
