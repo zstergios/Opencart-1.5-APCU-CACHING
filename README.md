@@ -3,7 +3,7 @@ Upload the files on your website root folder (like public_html or httpdocs)
 
 This solution will not break your site if your server has not APC installed.
 
-Also a VQMOD xml file will be added (works on all opencart versions).
+About VQMOD xml file (works on all opencart versions).
 The "engitron.xml" will add the right caching headers to your installation making it NGINIX/VARNISH friendly. For example if a logged user is viewing your website tells the NGINIX/VARNISH not to cache, also when a guest has added a product in the cart.
 
 
