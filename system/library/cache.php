@@ -111,13 +111,13 @@ class Cache
 		{
 			unset($_SESSION['opencartCache'][$cacheKey]);
 		}
-		elseif($mode=='write')
+		else if($mode=='write')
 		{
 			$_SESSION['opencartCache'][$cacheKey]=serialize($newData);
 		}
-		else
+		else if(isset($_SESSION['opencartCache'][$cacheKey]))
 		{
-			return isset($_SESSION['opencartCache'][$cacheKey])? unserialize($_SESSION['opencartCache'][$cacheKey]) :false;
+			return unserialize($_SESSION['opencartCache'][$cacheKey]);
 		}
 		return false;
 	}
