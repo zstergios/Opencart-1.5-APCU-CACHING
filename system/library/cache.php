@@ -94,7 +94,6 @@ class Cache
 		$hashKey=md5(HTTP_SERVER.$key);
 		$file=DIR_CACHE.$hashKey.'.cache';
 		
-		
 		//Session Cache
 		$this->sessionCache('delete',$hashKey);
 		
