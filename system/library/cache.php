@@ -25,12 +25,7 @@ class Cache
 		elseif (extension_loaded('apc')) //APC old version
 			$this->APCmode='apc';
 	}
-	
-	public function __destruct()
-	{
-		unset($_SESSION['opencartCache']); //clear session on close, prevent storing
-	}
-
+		
 	public function get($key)
 	{	
 		//APC(u)
@@ -57,7 +52,7 @@ class Cache
 			}
 			$this->delete($key); //expired;
 		}
-		return false;
+		return null;
 	}
 
 	public function set($key, $value)
@@ -122,5 +117,20 @@ class Cache
 			return $_SESSION['opencartCache'][$cacheKey];
 		}
 		return false;
+	}
+	
+	public function setExpire($expire)
+	{
+		$this->expire=$expire;
+	}
+	
+	public function getExpire()
+	{
+		return $this->expire;
+	}
+	
+	public function __destruct()
+	{
+		unset($_SESSION['opencartCache']); //clear session on close, prevent storing
 	}
 }

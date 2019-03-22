@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+	<id>Advanced Caching</id>
+	<version>1.0.0</version>
+	<vqmver>2.4.1</vqmver>
+	<author>Stergios Zgouletas</author>
+	<file path="catalog/model/catalog/product.php">
+		<operation>
+		  <search position="replace"><![CDATA[public function getProduct(]]></search>
+		  <add><![CDATA[public function getProductOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getProductOld(]]></search>
+		  <add><![CDATA[
+	function getBaseCache()
+	{
+		if ($this->customer->isLogged()) {
+			$customer_group_id = $this->customer->getCustomerGroupId();
+		} else {
+			$customer_group_id = $this->config->get('config_customer_group_id');
+		}
+		return (int)$this->config->get('config_language_id').'.'.(int)$this->config->get('config_store_id').'.'.$customer_group_id;
+	}
+	
+	public function getProduct($product_id)
+	{
+		$cacheKey='product.getProduct'.$this->getBaseCache(). '.' .$product_id;
+		$product = $this->cache->get($cacheKey);
+		if(is_array($product)) return $product;
+		$product=$this->getProductOld($product_id);
+		if(is_array($product))
+		{
+			if(method_exists($this->cache,'setExpire')) $this->cache->setExpire(600); //10 minutes
+			$this->cache->set($cacheKey,$product);
+			if(method_exists($this->cache,'setExpire')) $this->cache->setExpire(3600); //reset
+		}
+		return $product;
+	}	  
+		  ]]></add>
+		</operation>
+		<operation>
+		  <search position="replace"><![CDATA[public function getTotalProducts(]]></search>
+		  <add><![CDATA[public function getTotalProductsOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getTotalProductsOld(]]></search>
+		  <add><![CDATA[
+	public function getTotalProducts($data = array())
+	{
+		$cacheKey='product.getTotalProducts'.$this->getBaseCache().'.'.md5(json_encode($data));
+		$total = $this->cache->get($cacheKey);
+		if($total!==null && is_numeric($total)) return (int)$total;
+		
+		$total=$this->getTotalProductsOld($data);
+		$this->cache->set($cacheKey,$total);
+		return $total;
+	}  
+		  ]]></add>
+		</operation>
+	</file>
+	<file path="catalog/model/catalog/category.php">
+		<operation>
+		  <search position="replace"><![CDATA[public function getCategories(]]></search>
+		  <add><![CDATA[public function getCategoriesOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getCategoriesOld(]]></search>
+		  <add><![CDATA[
+	public function getCategories($parent_id = 0)
+	{
+		$cacheKey='category.getcategories.'.$parent_id;
+		$rows = $this->cache->get($cacheKey);
+		if(is_array($rows)) return $rows;
+		
+		$rows=$this->getCategoriesOld($parent_id);
+		if(!empty($rows)) $this->cache->set($cacheKey,$rows);
+		
+		return $rows;
+	}
+		  ]]></add>
+		</operation>
+	</file>
+</modification>
