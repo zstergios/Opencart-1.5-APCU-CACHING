@@ -113,11 +113,13 @@ class Cache
 		}
 		else if($mode=='write')
 		{
-			$_SESSION['opencartCache'][$cacheKey]=serialize($newData);
+			//$_SESSION['opencartCache'][$cacheKey]=serialize($newData);
+			$_SESSION['opencartCache'][$cacheKey]=$newData;
 		}
 		else if(isset($_SESSION['opencartCache'][$cacheKey]))
 		{
-			return unserialize($_SESSION['opencartCache'][$cacheKey]);
+			//return unserialize($_SESSION['opencartCache'][$cacheKey]);
+			return $_SESSION['opencartCache'][$cacheKey];
 		}
 		return false;
 	}
