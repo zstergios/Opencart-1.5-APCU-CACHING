@@ -22,19 +22,26 @@
 		return (int)$this->config->get('config_language_id').'.'.(int)$this->config->get('config_store_id').'.'.$customer_group_id;
 	}
 	
-	public function getProduct($product_id)
+	public function checkCache($callFunc,$param1=NULL,$time=3600)
 	{
-		$cacheKey='product.getProduct'.$this->getBaseCache(). '.' .$product_id;
-		$product = $this->cache->get($cacheKey);
-		if(is_array($product)) return $product;
-		$product=$this->getProductOld($product_id);
-		if(is_array($product))
+		$cacheParam=is_array($param1) || is_object($param1)?md5(json_encode($param1)):$param1;
+		$cacheKey='product.'.$callFunc.$this->getBaseCache().'.'.$cacheParam;
+		$cache = $this->cache->get($cacheKey);
+		if($cache!==NULL && $cache!==false) return $cache;
+		
+		$data=!is_null($param1)?$this->$callFunc($param1):$this->$callFunc();
+		if($data)
 		{
-			if(method_exists($this->cache,'setExpire')) $this->cache->setExpire(600); //10 minutes
-			$this->cache->set($cacheKey,$product);
+			if(method_exists($this->cache,'setExpire')) $this->cache->setExpire($time); //10 minutes
+			$this->cache->set($cacheKey,$data);
 			if(method_exists($this->cache,'setExpire')) $this->cache->setExpire(3600); //reset
 		}
-		return $product;
+		return $data;
+	}
+	
+	public function getProduct($product_id)
+	{
+		return $this->checkCache('getProductOld',$product_id,600);
 	}	  
 		  ]]></add>
 		</operation>
@@ -45,19 +52,82 @@
 		<operation>
 		  <search position="before"><![CDATA[public function getTotalProductsOld(]]></search>
 		  <add><![CDATA[
-	public function getTotalProducts($data = array())
+		public function getTotalProducts()
 	{
-		$cacheKey='product.getTotalProducts'.$this->getBaseCache().'.'.md5(json_encode($data));
-		$total = $this->cache->get($cacheKey);
-		if($total!==null && is_numeric($total)) return (int)$total;
-		
-		$total=$this->getTotalProductsOld($data);
-		$this->cache->set($cacheKey,$total);
-		return $total;
-	}  
+		return $this->checkCache('getTotalProductsOld');
+	}	
 		  ]]></add>
 		</operation>
+		<operation>
+		  <search position="replace"><![CDATA[public function getProducts(]]></search>
+		  <add><![CDATA[public function getProductsOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getProductsOld(]]></search>
+		  <add><![CDATA[
+	public function getProducts($data = array())
+	{
+		return $this->checkCache('getProductsOld',$data,900);
+	}	
+		  ]]></add>
+		</operation>
+		<operation>
+		  <search position="replace"><![CDATA[public function getCategories(]]></search>
+		  <add><![CDATA[public function getCategoriesOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getCategoriesOld(]]></search>
+		  <add><![CDATA[
+	public function getCategories($product_id)
+	{
+		return $this->checkCache('getCategoriesOld',$product_id,600);
+	}	
+		  ]]></add>
+		</operation>
+		
+		<operation>
+		  <search position="replace"><![CDATA[public function getProductImages(]]></search>
+		  <add><![CDATA[public function getProductImagesOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getProductImagesOld(]]></search>
+		  <add><![CDATA[
+	public function getProductImages($product_id)
+	{
+		return $this->checkCache('getProductImagesOld',$product_id,600);
+	}	
+		  ]]></add>
+		</operation>
+		
+		<operation>
+		  <search position="replace"><![CDATA[public function getPopularProducts(]]></search>
+		  <add><![CDATA[public function getPopularProductsOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getPopularProductsOld(]]></search>
+		  <add><![CDATA[
+	public function getPopularProducts($limit)
+	{
+		return $this->checkCache('getPopularProductsOld',$limit);
+	}	
+		  ]]></add>
+		</operation>
+		
+		<operation>
+		  <search position="replace"><![CDATA[public function getProductRelated(]]></search>
+		  <add><![CDATA[public function getProductRelatedOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getProductRelatedOld(]]></search>
+		  <add><![CDATA[
+	public function getProductRelated($product_id)
+	{
+		return $this->checkCache('getProductRelatedOld',$product_id);
+	}	
+		  ]]></add>
+		</operation>		
 	</file>
+	
 	<file path="catalog/model/catalog/category.php">
 		<operation>
 		  <search position="replace"><![CDATA[public function getCategories(]]></search>
