@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+	<id>Advanced Caching Product</id>
+	<version>1.1.0</version>
+	<vqmver>2.4.1</vqmver>
+	<author>Web-expert.gr / Stergios Zgouletas</author>
+	
+	<file path="catalog/model/catalog/product.php">
+		<operation>
+		  <search position="replace"><![CDATA[public function getTotalProducts(]]></search>
+		  <add><![CDATA[public function getTotalProductsOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getTotalProductsOld(]]></search>
+		  <add><![CDATA[
+	public function getTotalProducts($data=array())
+	{
+		$cacheKey='product.getTotalProducts.'.md5(json_encode($data));
+		$total = $this->cache->get($cacheKey);
+		if($total!==NULL && is_numeric($total)) return (int)$total;
+		
+		$total=$this->getTotalProductsOld($data);
+		$this->cache->set($cacheKey,$total);
+		return $total;
+	}
+		  ]]></add>
+		</operation>
+		<operation>
+		  <search position="replace"><![CDATA[public function getPopularProducts(]]></search>
+		  <add><![CDATA[public function getPopularProductsOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getPopularProductsOld(]]></search>
+		  <add><![CDATA[
+	public function getPopularProducts($limit)
+	{
+		$cacheKey = 'product.popularproducts.' . (int)$this->config->get('config_language_id') . '.' . (int)$this->config->get('config_store_id') . '.' . $this->config->get('config_customer_group_id') . '.' . (int)$limit;		
+		$product_data = $this->cache->get($cacheKey);
+		if(is_array($product_data)) return $product_data;
+		$product_data=$this->getPopularProductsOld($limit);
+		if(!empty($product_data)) $this->cache->set($cacheKey,$product_data);
+		return $product_data;
+	}	
+		  ]]></add>
+		</operation>	
+	</file>
+</modification>

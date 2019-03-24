@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+	<id>Advanced Caching Categories</id>
+	<version>1.0.0</version>
+	<vqmver>2.4.1</vqmver>
+	<author>Stergios Zgouletas</author>
+	
+	<file path="catalog/model/catalog/category.php">
+		<operation>
+		  <search position="replace"><![CDATA[public function getCategories(]]></search>
+		  <add><![CDATA[public function getCategoriesOld(]]></add>
+		</operation>
+		<operation>
+		  <search position="before"><![CDATA[public function getCategoriesOld(]]></search>
+		  <add><![CDATA[
+	public function getCategories($parent_id = 0)
+	{
+		$cacheKey='category.getcategories.'.$parent_id;
+		$rows = $this->cache->get($cacheKey);
+		if(is_array($rows)) return $rows;
+		
+		$rows=$this->getCategoriesOld($parent_id);
+		if(!empty($rows)) $this->cache->set($cacheKey,$rows);
+		
+		return $rows;
+	}
+		  ]]></add>
+		</operation>
+	</file>
+</modification>
