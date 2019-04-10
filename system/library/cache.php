@@ -1,7 +1,7 @@
 <?php
 /**
  * @package		Opencart v1.5 Advanced Caching
- * @version     1.1
+ * @version     1.3
  * @author      Stergios Zgouletas <info@web-expert.gr>
  * @link        http://www.web-expert.gr
  * @copyright   Copyright (C) 2010 Web-Expert.gr All Rights Reserved
@@ -12,6 +12,7 @@ class Cache
 {
 	private $expire = 3600;
 	private $APCmode=false;
+	private $cache=array();
 	
 	public function __construct($expire=3600)
 	{
@@ -27,97 +28,83 @@ class Cache
 	}
 		
 	public function get($key)
-	{	
+	{			
+		$hashKey=md5(HTTP_SERVER.$key);
+		
+		if(isset($this->cache[$hashKey]) && $this->cache[$hashKey]['time']+$this->cache[$hashKey]>=time()) return $this->cache[$hashKey];
+		
 		//APC(u)
 		if($this->APCmode!==false)
 		{
-			return $this->APCmode=='apcu'?apcu_fetch(HTTP_SERVER.$key):apc_fetch(HTTP_SERVER.$key);
+			$result=false;
+			$data=$this->APCmode=='apcu'?apcu_fetch($hashKey,$result):apc_fetch($hashKey,$result);
+			if(!$result || !is_array($data)) return null;
 		}
-		
-		$hashKey=md5(HTTP_SERVER.$key);
-		
-		//Session Cache
-		$sessCache=$this->sessionCache($hashKey);
-		if($sessCache!==false && isset($sessCache['time']) && $sessCache['time']+$this->expire>=time()) return $sessCache['data'];
-		
-		//File Cache
-		$file=DIR_CACHE. $hashKey.'.cache';
-		if(file_exists($file))
+		else
 		{
-			$cache = file_get_contents($file);
-			$data = unserialize($cache);
-			if($data!==false && isset($data['time']) && $data['time']+$this->expire>=time())
+			//File Cache
+			$file=DIR_CACHE. $hashKey.'.cache';
+			$data=false;
+			if(file_exists($file))
 			{
-				return $data['data'];
+				$cache = file_get_contents($file);
+				$data = unserialize($cache);
 			}
-			$this->delete($key); //expired;
+			if($data===false) return null;
 		}
+		
+		if(isset($data['time']) && $data['time']+$this->expire>=time())
+		{
+			$this->cache[$hashKey]=$data;
+			return $data['data'];
+		}
+		
 		return null;
 	}
 
 	public function set($key, $value)
 	{
-		//APC(u)
-		if($this->APCmode!==false)
-		{
-			$this->delete($key);
-			return $this->APCmode=='apcu'? apcu_add(HTTP_SERVER . $key, $value, $this->expire) : apc_store(HTTP_SERVER . $key, $value, $this->expire);
-		}
-		
 		$hashKey=md5(HTTP_SERVER.$key);
-		$file=DIR_CACHE.$hashKey.'.cache';
 		
 		$cache=array(
 			'time'=>time(),
 			'data'=>$value,
 		);
 		
-		//Session Cache
-		$this->sessionCache('write',$hashKey,$cache);
-		//File Cache
-		file_put_contents($file,serialize($cache),LOCK_EX);
+		$this->cache[$hashKey]=$cache;
+
+		//APC(u)
+		if($this->APCmode!==false)
+		{
+			$this->APCmode=='apcu'? apcu_store($hashKey, $cache, $this->expire) : apc_store($hashKey, $cache, $this->expire);
+		}
+		else
+		{
+			//File Cache
+			$file=DIR_CACHE.$hashKey.'.cache';		
+			file_put_contents($file,serialize($cache),LOCK_EX);
+		}
 	}
 
 	public function delete($key)
 	{
+		$hashKey=md5(HTTP_SERVER.$key);
+		
+		if(isset($this->cache[$hashKey])) unset($this->cache[$hashKey]);
+		
 		//APC(u)
 		if($this->APCmode!==false)
 		{
-			return $this->APCmode=='apcu'? apcu_delete(HTTP_SERVER.$key) : apc_delete(HTTP_SERVER.$key);
+			$this->APCmode=='apcu'? apcu_delete($hashKey) : apc_delete($hashKey);
 		}
-		
-		$hashKey=md5(HTTP_SERVER.$key);
-		$file=DIR_CACHE.$hashKey.'.cache';
-		
-		//Session Cache
-		$this->sessionCache('delete',$hashKey);
-		
-		//File Cache
-		if(file_exists($file))
+		else
 		{
-			unlink($file);
+			//File Cache
+			$file=DIR_CACHE.$hashKey.'.cache';
+			if(file_exists($file)) unlink($file);
 		}
 	}
 	
-	//session cache prevents re-opening the file when multiple files asking for specific key
-	protected function sessionCache($mode,$cacheKey,$newData=NULL)
-	{
-		if(isset($_SESSION['opencartCache'][$cacheKey]) && $mode=='delete')
-		{
-			unset($_SESSION['opencartCache'][$cacheKey]);
-		}
-		else if($mode=='write')
-		{
-			//$_SESSION['opencartCache'][$cacheKey]=serialize($newData);
-			$_SESSION['opencartCache'][$cacheKey]=$newData;
-		}
-		else if(isset($_SESSION['opencartCache'][$cacheKey]))
-		{
-			//return unserialize($_SESSION['opencartCache'][$cacheKey]);
-			return $_SESSION['opencartCache'][$cacheKey];
-		}
-		return false;
-	}
 	
 	public function setExpire($expire)
 	{
@@ -131,6 +118,6 @@ class Cache
 	
 	public function __destruct()
 	{
-		unset($_SESSION['opencartCache']); //clear session on close, prevent storing
+		$this->cache=array();
 	}
 }
