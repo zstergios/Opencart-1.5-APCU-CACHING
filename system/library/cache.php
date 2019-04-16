@@ -1,7 +1,7 @@
 <?php
 /**
  * @package		Opencart v1.5 Advanced Caching
- * @version     1.3
+ * @version     1.4
  * @author      Stergios Zgouletas <info@web-expert.gr>
  * @link        http://www.web-expert.gr
  * @copyright   Copyright (C) 2010 Web-Expert.gr All Rights Reserved
@@ -15,9 +15,7 @@ class Cache
 	private $cache=array();
 	
 	public function __construct($expire=3600)
-	{
-		if(!isset($_SESSION['opencartCache'])) $_SESSION['opencartCache']=array();
-		
+	{	
 		$this->expire = $expire;
 		$this->APCmode=false;
 		
@@ -31,7 +29,7 @@ class Cache
 	{			
 		$hashKey=md5(HTTP_SERVER.$key);
 		
-		if(isset($this->cache[$hashKey]) && $this->cache[$hashKey]['time']+$this->cache[$hashKey]>=time()) return $this->cache[$hashKey];
+		if(isset($this->cache[$hashKey]) && $this->cache[$hashKey]['time']+$this->expire>=time()) return $this->cache[$hashKey]['data'];
 		
 		//APC(u)
 		if($this->APCmode!==false)
