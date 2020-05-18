@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<modification>
+	<id>Engintron - NGINX - Varnish IP Fix</id>
+	<version>1.2.0</version>
+	<vqmver>2.4.1</vqmver>
+	<author>Stergios Zgouletas</author>
+	<file path="system/startup.php">
+    <operation>
+      <search position="before"><![CDATA[if (!isset($_SERVER['HTTP_HOST']))]]></search>
+      <add><![CDATA[
+	  //Web-expert.gr Fix IP
+		if (isset($_SERVER['HTTP_CLIENT_IP']))
+			$ipaddress = $_SERVER['HTTP_CLIENT_IP'];
+		else if(isset($_SERVER['HTTP_X_FORWARDED_FOR']))
+			$ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		else if(isset($_SERVER['HTTP_X_FORWARDED']))
+			$ipaddress = $_SERVER['HTTP_X_FORWARDED'];
+		else if(isset($_SERVER['HTTP_X_CLUSTER_CLIENT_IP']))
+			$ipaddress = $_SERVER['HTTP_X_CLUSTER_CLIENT_IP'];
+		else if(isset($_SERVER['HTTP_FORWARDED_FOR']))
+			$ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
+		else if(isset($_SERVER['HTTP_FORWARDED']))
+			$ipaddress = $_SERVER['HTTP_FORWARDED'];
+		else if(isset($_SERVER['REMOTE_ADDR']))
+			$ipaddress = $_SERVER['REMOTE_ADDR'];
+		else
+			$ipaddress = '';
+		if($ipaddress!='') $_SERVER['REMOTE_ADDR']=$ipaddress;
+        ]]></add>
+    </operation>
+	</file>
+</modification>
